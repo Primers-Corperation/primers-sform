@@ -626,6 +626,31 @@ button {
   opacity: 1;
 }
 
+.upload-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+}
+
+.upload-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  border-color: var(--text-secondary);
+  transform: scale(1.05);
+}
+
+.upload-btn:active {
+  transform: scale(0.95);
+}
+
 .input-hint {
   max-width: 800px;
   margin: 0.5rem auto 0 auto;

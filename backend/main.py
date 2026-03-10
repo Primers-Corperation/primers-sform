@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from core.engine import PrimersEngine
@@ -54,6 +54,20 @@ def read_root():
 async def chat_endpoint(request: ChatRequest):
     response_obj = engine.process(request.message, mode=request.mode)
     # Convert dataclass to dict for JSON serialization
+    return {"response": response_obj.to_dict()}
+
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    content = await file.read()
+    try:
+        content_str = content.decode("utf-8")
+    except:
+        content_str = "[Binary Data]"
+
+    # Route to engine as a special "upload" command
+    # Pattern: "upload file: [filename] content: [content]"
+    msg = f"upload file: {file.filename}\ncontent: {content_str}"
+    response_obj = engine.process(msg)
     return {"response": response_obj.to_dict()}
 
 @app.post("/ingest")

@@ -147,6 +147,42 @@ function App() {
     }
   }, [input]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      const userMsg: Message = { id: Date.now().toString(), role: 'user', content: `Uploaded file: ${file.name}` };
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.response.content,
+        trace: data.response.trace,
+        level: data.response.level,
+        tone: data.response.tone,
+        confidence: data.response.confidence,
+        meta: data.response.meta,
+      };
+      setMessages(prev => [...prev, userMsg, aiMsg]);
+    } catch (e) {
+      console.error("Upload failed", e);
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const send = async (overrideText?: string) => {
     const textToSend = (overrideText || input).trim();
     if (!textToSend) return;
@@ -410,6 +446,11 @@ function App() {
                             <div className="d-progress"><div className="d-fill" style={{ width: `${m.meta.insights.metrics.architectural_health}%` }} /></div>
                           </div>
                           <div className="dash-stat">
+                            <div className="d-label">Base Exposure</div>
+                            <div className="d-val text-dim">${m.meta.insights.metrics.base_debt_exposure.toLocaleString()}</div>
+                            <div className="d-sub">Market benchmark (raw)</div>
+                          </div>
+                          <div className="dash-stat">
                             <div className="d-label">Adjusted Debt (V4)</div>
                             <div className="d-val text-red">${m.meta.insights.metrics.technical_debt_cost.toLocaleString()}</div>
                             <div className="d-sub">Risk Adjusted exposure</div>
@@ -527,6 +568,22 @@ function App() {
         {/* Input */}
         <div className="input-area">
           <div className="input-box">
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={uploadFile}
+            />
+            <button
+              className="upload-btn"
+              onClick={() => fileInputRef.current?.click()}
+              title="Upload file for analysis"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
             <textarea
               ref={textareaRef}
               rows={1}

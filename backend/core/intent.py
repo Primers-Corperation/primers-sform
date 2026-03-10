@@ -12,6 +12,7 @@ class Intent(Enum):
     TEACHING = auto()
     EXECUTIVE_INSIGHTS = auto()
     APPLY_REFACTOR = auto()
+    UPLOAD = auto()
     FALLBACK = auto()
 
 class IntentRouter:
@@ -21,6 +22,8 @@ class IntentRouter:
         # Priority 0: Conversational Fillers (Always Fallback)
         if normalized.startswith("teach:"):
             return Intent.TEACHING
+        if normalized.startswith("upload file:"):
+            return Intent.UPLOAD
 
         fillers = ["hey", "hello", "hi", "how are you", "who are you", "good morning"]
         if any(normalized == f or normalized.startswith(f + " ") for f in fillers):

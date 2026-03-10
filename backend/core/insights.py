@@ -112,19 +112,31 @@ class ExecutiveInsights:
         
     def _calculate_pdm(self, risk_nodes: Dict) -> float:
         """
-        V4 Financial Engine: PDM = 1 + Σ (w_i * (RiskIndex_i/100))
-        Weights criticality and change volume to compute systemic exposure.
+        V4 Financial Engine (Hardened): PDM = 1 + (Σ w_i * A_i / Σ w_i)
+        Uses Weighted Mean to prevent inflation from ecosystem size.
         """
         if not risk_nodes: return 1.0
         
-        # Average risk across all nodes weighted by criticality
-        total_pdm = 1.0
+        amplifications = []
         for node in risk_nodes.values():
-            # If a node is a strategic hub (BLUE) or instable (RED), it amplifies the multiplier
-            amplification = (node.total_risk_score / 100) * (1.0 + node.criticality_risk)
-            total_pdm += (amplification / len(risk_nodes))
+            # A_i = (RiskIndex/100) * (1 + Criticality)
+            # We use normalized criticality (C) to amplify the risk
+            amp = (node.total_risk_score / 100.0) * (1.0 + node.criticality_risk)
+            amplifications.append(amp)
+        
+        if not amplifications: return 1.0
+        
+        # Aggregation: Weighted mean prioritizing high-risk hotspots (Top 20% or Top 5)
+        # This focuses on "Risk Concentration" rather than total node count
+        sorted_amps = sorted(amplifications, reverse=True)
+        top_k = max(1, min(len(sorted_amps), 10)) # Top 10 hotspots
+        concentration_risk = sum(sorted_amps[:top_k]) / top_k
+        
+        # PDM = 1 + (α * concentration_risk)
+        # α = 2.0 (scaling factor for senior engineer overhead / incident probability)
+        pdm = 1.0 + (2.0 * concentration_risk)
             
-        return min(3.5, total_pdm)
+        return min(3.5, pdm)
 
     def _calculate_roi(self, analyses: Dict) -> int:
         # ROI is higher if the code is modular

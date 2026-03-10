@@ -226,6 +226,21 @@ class PrimersEngine:
             
             return EngineResponse(f"No active refactor plan found for '{target_file}'. Generate a plan first.", "error", 1.0, IntelligenceLevel.SYMBOLIC, Tone.CAUTIOUS, graph.trace)
 
+        elif intent == Intent.UPLOAD:
+            # Format: upload file: [filename]\ncontent: [content]
+            lines = input_text.split("\n")
+            filename = lines[0].replace("upload file:", "").strip()
+            content = "\n".join(lines[1:]).replace("content:", "", 1).strip()
+            
+            graph.add_step(Intent.UPLOAD, "File Acquisition", 1.0, f"Synthesizing knowledge from uploaded file: {filename}")
+            # Add to memory and return success
+            self.m2.save_interaction(f"file_upload: {filename}", content, 1.0)
+            response = EngineResponse(
+                f"### FILE ACQUISITION SUCCESSFUL\nI have ingested the contents of `{filename}` into my Sovereign Memory. "
+                "This knowledge will now be used to inform my architectural reasoning and future analysis cycles.",
+                "knowledge", 1.0, IntelligenceLevel.SYMBOLIC, Tone.ASSERTIVE, graph.trace
+            )
+
         elif intent == Intent.FALLBACK:
             # 1. Cloud Fallback (Gemini) if configured and enabled
             if self.model and self.gov.is_enabled("external_llm"):

@@ -14,7 +14,7 @@ def run_shadow_gate():
     V4 Phase 1: Shadow CI Gate.
     Executes architectural audit and outputs verdicts without blocking the process.
     """
-    print("🛡️ SOVEREIGN GUARD GATE: INITIATING SHADOW AUDIT")
+    print(" SOVEREIGN GUARD GATE: INITIATING SHADOW AUDIT")
     print("-" * 50)
     
     engine = PrimersEngine()
@@ -36,8 +36,10 @@ def run_shadow_gate():
     for hotspot in hotspots:
         if hotspot['risk_type'] == "RED":
             critical_found = True
-            print(f"   [SHADOW BLOCK] CRITICAL: {hotspot['node']} (Score: {hotspot['score']})")
-            print(f"   Reason: Systemic Fragility exceeds Sovereign Threshold (Blast Radius: {hotspot['blast_radius']}%)")
+            print(f"   [SHADOW BLOCK] CRITICAL: {hotspot['node']}")
+            print(f"   └─ RISK INDEX: {hotspot['score']} (Threshold: 75.0)")
+            print(f"   └─ BLAST RADIUS: {hotspot['blast_radius']}%")
+            print(f"   └─ EXPLAINABILITY: High systemic fragility detected in dependent topology.")
 
     print("-" * 50)
     if critical_found:

@@ -84,6 +84,24 @@ class KnowledgeStore:
                     metadata TEXT
                 )
             """)
+            # M2 Commercial: Real-world value scaling
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS commercial_metrics (
+                    metric_id TEXT PRIMARY KEY,
+                    value REAL
+                )
+            """)
+            # M2 Graph: Sovereign Topology
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS relationships (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    source TEXT,
+                    target TEXT,
+                    type TEXT,
+                    strength REAL,
+                    UNIQUE(source, target, type)
+                )
+            """)
             cursor.execute("INSERT OR IGNORE INTO commercial_metrics (metric_id, value) VALUES ('total_debt_repaid', 0.0)")
             conn.commit()
 
