@@ -1,5 +1,5 @@
 
-# Primers S-Form (Sovereign Intelligence)
+# Primers S-Form (Primers Intelligence)
 
 ## Overview
 Primers S-Form is an advanced cognitive engine designed for code intelligence, refactoring, and architectural reasoning. It features a 3-layer cognitive stack (Analysis, Interpretation, Judgment) to "reason" about code structure rather than just processing text.
