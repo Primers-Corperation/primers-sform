@@ -72,30 +72,121 @@ class EmergencyIntelligence:
 
     def analyze_witness_image(self, image_data: bytes) -> Dict[str, Any]:
         """
-        Real DETR inference using facebook/detr-resnet-50 from HuggingFace.
-        Falls back to simulation if model cannot load.
+        Dual-path DETR inference:
+        - Vercel: Routes through HuggingFace Inference API (no PyTorch needed)
+        - On-premise: Runs local DETR-ResNet50 weights
         """
+        if os.getenv("VERCEL"):
+            return self._detr_via_hf_api(image_data)
+        else:
+            return self._detr_local_inference(image_data)
+
+    def _detr_via_hf_api(self, image_data: bytes) -> Dict[str, Any]:
+        """HuggingFace Inference API path — runs on Vercel."""
+        import requests
+
+        hf_token = os.getenv("HF_TOKEN", "")
+        if not hf_token:
+            return {
+                "detected_objects": ["HF_TOKEN not configured"],
+                "threat_level": "UNKNOWN",
+                "engine": "DETR-API",
+                "bboxes": [],
+                "mode": "ERROR"
+            }
+
+        API_URL = "https://api-inference.huggingface.co/models/facebook/detr-resnet-50"
+        headers = {"Authorization": f"Bearer {hf_token}"}
+
+        try:
+            response = requests.post(
+                API_URL,
+                headers=headers,
+                data=image_data,
+                timeout=30
+            )
+
+            if response.status_code == 503:
+                # Model is loading on HF side — cold start, retry once
+                import time
+                time.sleep(8)
+                response = requests.post(
+                    API_URL,
+                    headers=headers,
+                    data=image_data,
+                    timeout=30
+                )
+
+            if response.status_code != 200:
+                raise Exception(f"HF API returned {response.status_code}: {response.text}")
+
+            detections = response.json()
+
+            # HF returns: [{"score": 0.99, "label": "person", "box": {"xmin":..,"ymin":..,"xmax":..,"ymax":..}}]
+            bboxes = []
+            detected_objects = []
+            threat_level = "LOW"
+
+            for det in detections:
+                score = round(det["score"], 3)
+                if score < 0.7:
+                    continue
+                label = det["label"]
+                box = det["box"]
+                box_coords = [
+                    round(box["xmin"]),
+                    round(box["ymin"]),
+                    round(box["xmax"]),
+                    round(box["ymax"])
+                ]
+                bboxes.append({"box": box_coords, "label": label, "conf": score})
+                detected_objects.append(f"{label} ({score*100:.0f}%)")
+
+            # Threat assessment
+            detected_labels = {b["label"].lower() for b in bboxes}
+            if detected_labels & {"fire", "knife", "gun", "weapon"}:
+                threat_level = "CRITICAL"
+            elif "person" in detected_labels:
+                threat_level = "HIGH"
+            elif len(bboxes) > 0:
+                threat_level = "MEDIUM"
+
+            return {
+                "detected_objects": detected_objects if detected_objects else ["No targets detected"],
+                "threat_level": threat_level,
+                "engine": "DETR-ResNet50 (HF Inference API)",
+                "bboxes": bboxes,
+                "mode": "LIVE"
+            }
+
+        except Exception as e:
+            print(f"[DETR] HF API failed: {e}")
+            return {
+                "detected_objects": ["API inference failed — check HF_TOKEN"],
+                "threat_level": "UNKNOWN",
+                "engine": "DETR-API-Error",
+                "bboxes": [],
+                "mode": "ERROR",
+                "error": str(e)
+            }
+
+    def _detr_local_inference(self, image_data: bytes) -> Dict[str, Any]:
+        """Local PyTorch inference path — runs on-premise only."""
         try:
             from transformers import DetrImageProcessor, DetrForObjectDetection
             from PIL import Image
             import torch
             import io
 
-            # Load image from bytes
             image = Image.open(io.BytesIO(image_data)).convert("RGB")
-
-            # Load model — downloads automatically on first run (~160MB)
-            # On subsequent runs loads from local HuggingFace cache
             processor = DetrImageProcessor.from_pretrained("facebook/detr-resnet-50")
             model = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50")
             model.eval()
 
-            # Run inference
             inputs = processor(images=image, return_tensors="pt")
             with torch.no_grad():
                 outputs = model(**inputs)
 
-            # Post-process — filter by confidence threshold
             target_sizes = torch.tensor([image.size[::-1]])
             results = processor.post_process_object_detection(
                 outputs,
@@ -103,11 +194,9 @@ class EmergencyIntelligence:
                 threshold=0.7
             )[0]
 
-            # Build response
             bboxes = []
             detected_objects = []
             threat_level = "LOW"
-            print(f"[DETR] Inference successful. Found {len(results['scores'])} potential targets.")
 
             for score, label_id, box in zip(
                 results["scores"],
@@ -116,17 +205,10 @@ class EmergencyIntelligence:
             ):
                 label = model.config.id2label[label_id.item()]
                 conf = round(score.item(), 3)
-                box_coords = [round(v) for v in box.tolist()]  # [x1, y1, x2, y2]
-
-                bboxes.append({
-                    "box": box_coords,
-                    "label": label,
-                    "conf": conf
-                })
+                box_coords = [round(v) for v in box.tolist()]
+                bboxes.append({"box": box_coords, "label": label, "conf": conf})
                 detected_objects.append(f"{label} ({conf*100:.0f}%)")
 
-            # Determine threat level based on what was detected
-            dangerous = {"person", "fire", "knife", "gun", "truck", "car"}
             detected_labels = {b["label"].lower() for b in bboxes}
             if detected_labels & {"fire", "knife", "gun"}:
                 threat_level = "CRITICAL"
@@ -138,20 +220,19 @@ class EmergencyIntelligence:
             return {
                 "detected_objects": detected_objects,
                 "threat_level": threat_level,
-                "engine": "DETR-ResNet50 (Real Inference)",
+                "engine": "DETR-ResNet50 (Local Inference)",
                 "bboxes": bboxes,
                 "mode": "LIVE"
             }
 
         except Exception as e:
-            # Sovereign fallback — simulation never crashes the demo
-            print(f"[DETR] Inference failed, falling back to simulation: {e}")
+            print(f"[DETR] Local inference failed: {e}")
             return {
-                "detected_objects": ["SIMULATION — model not loaded"],
+                "detected_objects": ["Local inference failed"],
                 "threat_level": "UNKNOWN",
-                "engine": "DETR-Simulation",
+                "engine": "DETR-Local-Error",
                 "bboxes": [],
-                "mode": "SIMULATED",
+                "mode": "ERROR",
                 "error": str(e)
             }
 

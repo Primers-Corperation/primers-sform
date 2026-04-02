@@ -5,4 +5,8 @@ requests
 python-dotenv
 psutil
 reportlab
+torch
+torchvision
+transformers
+timm
 Pillow
