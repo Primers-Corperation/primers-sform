@@ -22,7 +22,9 @@ except Exception as e:
             "error": str(e),
             "traceback": error_detail,
             "python_version": sys.version,
-            "sys_path": sys.path[:5],
+            "cwd": os.getcwd(),
+            "root_contents": os.listdir(".") if os.path.exists(".") else [],
+            "api_contents": os.listdir("api") if os.path.exists("api") else [],
             "backend_path": backend_path,
             "backend_exists": os.path.exists(backend_path),
             "backend_contents": os.listdir(backend_path) if os.path.exists(backend_path) else []
