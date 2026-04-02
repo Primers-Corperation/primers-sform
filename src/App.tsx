@@ -392,7 +392,7 @@ function App() {
           {view === 'rescue' ? (
              <RescueDashboard 
                onCommand={(msg) => send(msg)} 
-               status={stats.emergency_status} 
+               status={stats.emergency_status as Record<string, 'READY' | 'SIMULATED' | 'OFFLINE'>} 
                session={session}
                onLogout={() => { localStorage.removeItem('sip_session'); setSession(null); }}
              />
