@@ -4,5 +4,3 @@ pydantic
 requests
 python-dotenv
 google-generativeai
-reportlab
-Pillow
