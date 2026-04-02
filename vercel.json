@@ -15,6 +15,10 @@
     ],
     "rewrites": [
         {
+            "source": "/api/health",
+            "destination": "api/health.py"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "api/index.py"
         },
