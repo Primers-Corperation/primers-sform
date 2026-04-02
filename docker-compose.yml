@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+  sip-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sip-sovereign-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models        # Mount local model weights
+      - sip-data:/tmp/sip_data      # Persistent sovereign storage
+    environment:
+      - SOVEREIGN_MODE=true
+      - SIP_DATA_DIR=/tmp/sip_data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  sip-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: sip-sovereign-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - sip-backend
+    environment:
+      - REACT_APP_API_URL=http://sip-backend:8000
+    restart: unless-stopped
+
+volumes:
+  sip-data:
+    driver: local

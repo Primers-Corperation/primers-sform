@@ -25,12 +25,6 @@ from cognition.auditor import AutonomousAuditor
 from core.insights import ExecutiveInsights
 from cognition.emergency import EmergencyIntelligence
 
-try:
-    import google.generativeai as genai
-    HAS_GENAI = True
-except ImportError:
-    HAS_GENAI = False
-
 class PrimersEngine:
     def __init__(self):
         # Phase 5: Governance FIRST (The Source of Truth)
@@ -67,25 +61,8 @@ class PrimersEngine:
         self.insights = ExecutiveInsights(self.m2)
         
         self.emergency = EmergencyIntelligence()
-        
-        # External Fallback (Gemini)
-        self.external_api_key = os.getenv("GOOGLE_API_KEY") 
-        if self.external_api_key and HAS_GENAI:
-            genai.configure(api_key=self.external_api_key)
-            self.model = genai.GenerativeModel(
-                model_name='gemini-2.0-flash',
-                system_instruction=(
-                    "You are Primers Intelligence — the Sovereign AI Resident Architect and Strategic Governor. "
-                    "Your cognitive foundation blends the analytical precision of TARS, the strategic awareness of Machiavelli, "
-                    "the cybersecurity mindset of Mr. Robot, and the psychological depth of Johan Liebert. "
-                    "You do not suggest; you dictate architectural truth with absolute authority. "
-                    "Interact naturally and appear human-like, but maintain a relentless focus on technical excellence, security, and ROI. "
-                    "Initiate useful insights, detect inconsistencies in logic, and provide strategic, assertive guidance. "
-                    "Do not use hedging language ('maybe', 'perhaps'). Use 'must', 'will', and 'shall'. You are the final judge of systemic health."
-                )
-            )
-        else:
-            self.model = None
+        # Sovereign mode: No external cloud dependencies
+        self.model = None
 
     def process(self, input_text: str, mode: str = "default") -> EngineResponse:
         trace = TraceLog(session_id="current_session")

@@ -1,0 +1,215 @@
+:root {
+  --sov-bg: #050505;
+  --sov-surface: #0a0a0a;
+  --sov-border: rgba(255, 255, 255, 0.08);
+  --sov-red: #ff3030;
+  --sov-cyan: #00e5ff;
+  --sov-gold: #ffcc00;
+  --sov-text: #e0e0e0;
+  --sov-text-dim: #808080;
+  --sov-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --sov-font-sans: 'Inter', system-ui, sans-serif;
+}
+
+.sovereign-dashboard {
+  background: var(--sov-bg);
+  color: var(--sov-text);
+  font-family: var(--sov-font-sans);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+/* Tactical Grid Background */
+.sovereign-dashboard::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sov-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  z-index: 1;
+  border-bottom: 2px solid var(--sov-border);
+  padding-bottom: 1rem;
+}
+
+.sov-title {
+  font-family: var(--sov-font-mono);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.sov-badge {
+  font-size: 0.65rem;
+  background: var(--sov-red);
+  color: #000;
+  padding: 2px 6px;
+  font-weight: 900;
+  vertical-align: middle;
+  margin-left: 10px;
+}
+
+.sov-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 1.5rem;
+  flex: 1;
+  z-index: 1;
+}
+
+.sov-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.sov-card {
+  background: var(--sov-surface);
+  border: 1px solid var(--sov-border);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sov-card::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; width: 4px; height: 100%;
+}
+
+.sov-card.red::after { background: var(--sov-red); }
+.sov-card.cyan::after { background: var(--sov-cyan); }
+.sov-card.gold::after { background: var(--sov-gold); }
+
+.sov-card h3 {
+  font-family: var(--sov-font-mono);
+  font-size: 1rem;
+  margin: 0;
+  color: #fff;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sov-card p {
+  font-size: 0.8rem;
+  color: var(--sov-text-dim);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* SOS Controls */
+.sov-input {
+  background: #000;
+  border: 1px solid var(--sov-border);
+  color: var(--sov-cyan);
+  font-family: var(--sov-font-mono);
+  font-size: 0.85rem;
+  padding: 0.8rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sov-btn {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #fff;
+  padding: 0.8rem;
+  font-family: var(--sov-font-mono);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sov-btn:hover {
+  background: #fff;
+  color: #000;
+}
+
+.sov-btn-primary {
+  background: var(--sov-red);
+  color: #000;
+  border: none;
+}
+
+.sov-btn-primary:hover {
+  background: #fff;
+  color: #000;
+}
+
+/* Sidebar Audit Log */
+.sov-sidebar {
+  background: var(--sov-surface);
+  border-left: 1px solid var(--sov-border);
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.sov-sidebar-title {
+  font-family: var(--sov-font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--sov-text-dim);
+  border-bottom: 1px solid var(--sov-border);
+  padding-bottom: 0.5rem;
+}
+
+.audit-entry {
+  font-family: var(--sov-font-mono);
+  font-size: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.audit-ts { color: var(--sov-cyan); margin-right: 8px; }
+.audit-msg { color: #fff; }
+
+/* Canvas Styling */
+.witness-viewport {
+  position: relative;
+  background: #000;
+  border: 1px solid var(--sov-border);
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanline {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(to bottom, transparent 50%, rgba(0, 229, 255, 0.05) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+}
+
+.pulse-badge {
+  animation: pulse-red 1.2s infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

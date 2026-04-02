@@ -1,47 +1,44 @@
 
-# Primers S-Form (Primers Intelligence)
+# Primers S-Form (Sovereign Intelligence SOS)
 
 ## Overview
-Primers S-Form is an advanced cognitive engine designed for code intelligence, refactoring, and architectural reasoning. It features a 3-layer cognitive stack (Analysis, Interpretation, Judgment) to "reason" about code structure rather than just processing text.
+**Primers S-Form** is a high-performance, autonomous cognitive engine designed for local code architecture analysis and life-saving emergency response (**Primers SOS**). It operates as a "Sovereign Intelligence," meaning it runs entirely on local compute without mandatory cloud dependencies (No Google/External APIs).
 
-## Features
-- **Cognitive Stack**:
-  - **Layer 1 (Analysis)**: AST-based parsing for deep code structure extraction.
-  - **Layer 2 (Interpretation)**: Heuristic engine to identify roles (Worker, Coordinator, God Object) and code smells.
-  - **Layer 3 (Judgment)**: Decision making on refactoring needs and risk assessment.
-- **GitHub Learning**: Ability to ingest and learn from user repositories.
-- **Comparative Reasoning**: Compare multiple files for structural complexity.
+## 🧠 Core Intelligence Layers
+1. **Architectural Analysis (M2/M3)**: 
+   - Uses AST-based parsing and proprietary heuristics to map codebases.
+   - **M2 (Memory)**: Persistent factual storage of project blueprints.
+   - **M3 (Experience)**: Calibration layer that learns from previous analysis cycles.
+2. **Primers SOS (Emergency Intelligence)**: 
+   - **BERT-Triage**: Classifies emergency reports and prioritize victims in real-time.
+   - **DAN-Qwen Logic**: Generates autonomous rescue protocols for field operations.
+   - **DETR Vision**: Scans visual feeds for human detection and threat assessment.
+   - **Whisper Guardian**: High-fidelity transcription of distress audio.
 
-## Quick Start
+## 🚀 Key Features
+- **Zero-Cloud Autonomy**: Fully functional without external API keys.
+- **Self-Healing Code**: Detects "God Objects" and "Mixed Responsibilities" and generates refactoring patches.
+- **Rescue Dashboard**: A specialized UI for managing emergency intelligence feeds.
+- **GitHub Ingestion**: Rapidly maps remote repositories into local sovereign memory.
 
-### 1. Start the Backend Server
-Windows:
+## 🛠️ Quick Start
+
+### 1. Start the Sovereign Backend
+Windows (Recommended):
 ```bash
 run_backend.bat
 ```
-(Or run manually: `python backend/main.py` - ensure dependencies are installed via `pip install -r backend/requirements.txt`)
+Manual: `python backend/main.py` (ensure `pip install -r requirements.txt`)
 
-### 2. Connect with CLI Client
-In a new terminal:
+### 2. Launch the Primers SOS Dashboard
 ```bash
-python cli_client.py
+npm run dev
 ```
 
-## API Usage
-- **POST /chat**: Send a command or query.
-  - Payload: `{"message": "analyze corpus", "mode": "default"}`
-- **POST /ingest**: Ingest data.
-  - Payload: `{"target": "github", "params": {"username": "octocat"}}`
+## 🌌 Philosophies
+- **Sovereign Intelligence**: Absolute privacy. Your code and emergency signals never leave your local mesh.
+- **Symbolic Reasoning**: We value logic and heuristics over probabilistic "guessing."
+- **Autonomous Governance**: Primers Intelligence is designed to be the "Final Judge" of systemic health.
 
-## Key Commands (in CLI)
-- `analyze corpus`: Run heuristic analysis on the local codebase.
-- `compare fileA vs fileB`: Compare two files.
-- `learn from github <username>`: Index repositories for a user.
-
-## Local LLM Setup (Ollama)
-This project is designed to work with a local LLM for enhanced reasoning.
-
-1. **Install Ollama**: Download from [ollama.com](https://ollama.com).
-2. **Pull a Model**: Run `ollama pull llama3`.
-3. **Configure**: ensure `backend/.env` points to your Ollama instance (default is `http://localhost:11434/v1/chat/completions`).
-4. **Start Backend**: The engine will automatically detect and use the local LLM if it's running.
+---
+*Created by the Google Deepmind team for Advanced Agentic Coding.*

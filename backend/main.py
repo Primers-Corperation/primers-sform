@@ -1,12 +1,18 @@
 from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from core.engine import PrimersEngine
+from core.report_generator import SovereignReportGenerator
+from core.auth import authenticate, validate_token, require_permission, revoke_token
+from core.compliance import get_compliance_report
+from fastapi import Header
 import os
 import uvicorn
 import time
 import psutil
 import sqlite3
+import tempfile
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -48,7 +54,11 @@ class IngestRequest(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"system": "PRIMERS GPT", "status": "ONLINE", "version": "2.0.0"}
+    return {"system": "PRIMERS GPT", "status": "ONLINE", "version": "2.5.0"}
+
+@app.get("/compliance")
+async def compliance_status():
+    return get_compliance_report()
 
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
@@ -65,10 +75,82 @@ async def upload_file(file: UploadFile = File(...)):
         content_str = "[Binary Data]"
 
     # Route to engine as a special "upload" command
-    # Pattern: "upload file: [filename] content: [content]"
     msg = f"upload file: {file.filename}\ncontent: {content_str}"
     response_obj = engine.process(msg)
     return {"response": response_obj.to_dict()}
+
+@app.post("/emergency/witness")
+async def emergency_witness(file: UploadFile = File(...)):
+    image_data = await file.read()
+    res = engine.emergency.analyze_witness_image(image_data)
+    return res
+
+@app.post("/emergency/transcribe")
+async def transcribe_audio(audio: UploadFile = File(...)):
+    if engine.emergency.status["whisper_voice"] == "READY":
+        # TODO: Move model loading to Intelligence engine initialization when weights are mounted.
+        # Current cold-load per request is for demo flexibility but will timeout on serverless.
+        import whisper
+        # Load model using the configured path
+        model = whisper.load_model("base", download_root=engine.emergency.models_config["whisper_voice"])
+        
+        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False, dir="/tmp") as tmp:
+            tmp.write(await audio.read())
+            tmp_path = tmp.name
+        
+        try:
+            result = model.transcribe(tmp_path)
+            return {"transcript": result["text"]}
+        finally:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+    else:
+        # Sovereign simulation fallback
+        return {
+            "transcript": engine.emergency.transcribe_voice_guardian(None),
+            "mode": "SIMULATED"
+        }
+
+@app.post("/auth/login")
+async def login(payload: dict):
+    username = payload.get("username", "")
+    password = payload.get("password", "")
+    session = authenticate(username, password)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    return session
+
+@app.post("/auth/logout")
+async def logout(payload: dict):
+    revoke_token(payload.get("token", ""))
+    return {"status": "SESSION_TERMINATED"}
+
+@app.get("/auth/validate")
+async def validate_session(authorization: str = Header(None)):
+    token = authorization.replace("Bearer ", "") if authorization else ""
+    session = validate_token(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Session expired or invalid")
+    return session
+
+@app.post("/emergency/report")
+async def generate_report(payload: dict, authorization: str = Header(None)):
+    token = authorization.replace("Bearer ", "") if authorization else ""
+    if not require_permission(token, "export_report"):
+        raise HTTPException(status_code=403, detail="INSUFFICIENT_CLEARANCE")
+    generator = SovereignReportGenerator()
+    filepath = generator.generate_incident_report(
+        audit_log=payload.get("audit_log", []),
+        triage_results=payload.get("triage_results", []),
+        detr_results=payload.get("detr_results", []),
+        operator=payload.get("operator", "GOV-DEF-01"),
+        incident_id=payload.get("incident_id", None)
+    )
+    return FileResponse(
+        filepath,
+        media_type="application/pdf",
+        filename=os.path.basename(filepath)
+    )
 
 @app.post("/ingest")
 async def ingest_endpoint(request: IngestRequest):

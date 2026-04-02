@@ -6,7 +6,7 @@ from core.types import IntelligenceLevel, Tone
 
 class EmergencyIntelligence:
     """
-    Sovereign Intelligence Extension: Emergency Response Platform (SecureLink)
+    Sovereign Intelligence Extension: Primers S-Form SOS
     Integrates specialized AI models for life-saving triage and rescue logic.
     """
     def __init__(self, enabled: bool = True):
@@ -23,8 +23,18 @@ class EmergencyIntelligence:
 
     def _check_models_presence(self):
         """Checks if local model files/directories exist."""
+        import os
+        hf_cache = os.path.expanduser("~/.cache/huggingface/hub")
+        detr_cached = any(
+            "detr-resnet-50" in d 
+            for d in os.listdir(hf_cache) 
+            if os.path.isdir(os.path.join(hf_cache, d))
+        ) if os.path.exists(hf_cache) else False
+
         for name, path in self.models_config.items():
-            if os.path.exists(path):
+            if name == "detr_vision":
+                self.status[name] = "READY" if detr_cached else "DOWNLOADING"
+            elif os.path.exists(path):
                 self.status[name] = "READY"
             else:
                 self.status[name] = "SIMULATED" # Defaults to heuristic-based simulation if path missing
@@ -60,15 +70,90 @@ class EmergencyIntelligence:
         
         return "### SYMBOLIC RESCUE LOGIC\nInitiating standard emergency protocols. Please stabilize the environment and wait for first responders."
 
-    def analyze_witness_image(self, image_metadata: Dict) -> Dict[str, Any]:
+    def analyze_witness_image(self, image_data: bytes) -> Dict[str, Any]:
         """
-        Uses DETR Vision Model (Image Witness) to detect threats or victims.
+        Real DETR inference using facebook/detr-resnet-50 from HuggingFace.
+        Falls back to simulation if model cannot load.
         """
-        return {
-            "detected_objects": ["Person (Distress)", "Fire", "Debris"],
-            "threat_level": "High",
-            "engine": "DETR-Vision-Matrix"
-        }
+        try:
+            from transformers import DetrImageProcessor, DetrForObjectDetection
+            from PIL import Image
+            import torch
+            import io
+
+            # Load image from bytes
+            image = Image.open(io.BytesIO(image_data)).convert("RGB")
+
+            # Load model — downloads automatically on first run (~160MB)
+            # On subsequent runs loads from local HuggingFace cache
+            processor = DetrImageProcessor.from_pretrained("facebook/detr-resnet-50")
+            model = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50")
+            model.eval()
+
+            # Run inference
+            inputs = processor(images=image, return_tensors="pt")
+            with torch.no_grad():
+                outputs = model(**inputs)
+
+            # Post-process — filter by confidence threshold
+            target_sizes = torch.tensor([image.size[::-1]])
+            results = processor.post_process_object_detection(
+                outputs,
+                target_sizes=target_sizes,
+                threshold=0.7
+            )[0]
+
+            # Build response
+            bboxes = []
+            detected_objects = []
+            threat_level = "LOW"
+            print(f"[DETR] Inference successful. Found {len(results['scores'])} potential targets.")
+
+            for score, label_id, box in zip(
+                results["scores"],
+                results["labels"],
+                results["boxes"]
+            ):
+                label = model.config.id2label[label_id.item()]
+                conf = round(score.item(), 3)
+                box_coords = [round(v) for v in box.tolist()]  # [x1, y1, x2, y2]
+
+                bboxes.append({
+                    "box": box_coords,
+                    "label": label,
+                    "conf": conf
+                })
+                detected_objects.append(f"{label} ({conf*100:.0f}%)")
+
+            # Determine threat level based on what was detected
+            dangerous = {"person", "fire", "knife", "gun", "truck", "car"}
+            detected_labels = {b["label"].lower() for b in bboxes}
+            if detected_labels & {"fire", "knife", "gun"}:
+                threat_level = "CRITICAL"
+            elif "person" in detected_labels:
+                threat_level = "HIGH"
+            elif len(bboxes) > 0:
+                threat_level = "MEDIUM"
+
+            return {
+                "detected_objects": detected_objects,
+                "threat_level": threat_level,
+                "engine": "DETR-ResNet50 (Real Inference)",
+                "bboxes": bboxes,
+                "mode": "LIVE"
+            }
+
+        except Exception as e:
+            # Sovereign fallback — simulation never crashes the demo
+            print(f"[DETR] Inference failed, falling back to simulation: {e}")
+            return {
+                "detected_objects": ["SIMULATION — model not loaded"],
+                "threat_level": "UNKNOWN",
+                "engine": "DETR-Simulation",
+                "bboxes": [],
+                "mode": "SIMULATED",
+                "error": str(e)
+            }
 
     def transcribe_voice_guardian(self, audio_data: Any) -> str:
         """

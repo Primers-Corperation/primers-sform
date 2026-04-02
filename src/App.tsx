@@ -3,10 +3,12 @@ import ReactMarkdown from 'react-markdown'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import './App.css'
 import './Insights.css'
+import './Sovereign.css'
 import Avatar from './components/Avatar'
 import Mermaid from './components/Mermaid'
 import DiffViewer from './components/DiffViewer'
 import RescueDashboard from './components/RescueDashboard'
+import SovereignLogin from './components/SovereignLogin'
 
 interface ReasoningStep {
   step_id: string;
@@ -98,6 +100,10 @@ function App() {
   const [currentEmotion, setCurrentEmotion] = useState<string>('neutral');
   const [history, setHistory] = useState<{ id: string, title: string, messages: Message[] }[]>([]);
   const [isEnterprise, setIsEnterprise] = useState<boolean>(false);
+  const [session, setSession] = useState<any>(() => {
+    const stored = localStorage.getItem('sip_session');
+    return stored ? JSON.parse(stored) : null;
+  });
 
   // Fetch Stats
   useEffect(() => {
@@ -262,6 +268,10 @@ function App() {
 
   const isEmpty = messages.length === 0;
 
+  if (!session) {
+    return <SovereignLogin onAuthenticated={setSession} />;
+  }
+
   return (
     <div className={`app ${stats.proactive_alert ? 'proactive-alert-active' : ''}`}>
       {/* ── Sidebar ── */}
@@ -280,7 +290,7 @@ function App() {
 
         <button className={`new-chat-btn ${view === 'rescue' ? 'active-tab' : ''}`} onClick={() => setView(view === 'chat' ? 'rescue' : 'chat')}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          {view === 'chat' ? 'Rescue SOS Dashboard' : 'Back to Code Intel'}
+          {view === 'chat' ? 'Primers SOS Dashboard' : 'Back to Code Intel'}
         </button>
 
         <button className="new-chat-btn sync-btn" onClick={() => send("sync ecosystem")}>
@@ -380,7 +390,12 @@ function App() {
         {/* Chat or Empty State */}
         <div className="chat-area">
           {view === 'rescue' ? (
-             <RescueDashboard onCommand={(msg) => send(msg)} status={stats.emergency_status} />
+             <RescueDashboard 
+               onCommand={(msg) => send(msg)} 
+               status={stats.emergency_status} 
+               session={session}
+               onLogout={() => { localStorage.removeItem('sip_session'); setSession(null); }}
+             />
           ) : isEmpty ? (
             <div className="empty-state">
               <div className="empty-icon"><PIcon /></div>
