@@ -10,7 +10,10 @@ from fastapi import Header
 import os
 import uvicorn
 import time
-import psutil
+try:
+    import psutil
+except ImportError:
+    psutil = None
 import sqlite3
 import tempfile
 from dotenv import load_dotenv
@@ -179,8 +182,8 @@ async def get_stats():
     
     # System Stats
     try:
-        cpu = psutil.cpu_percent()
-        mem = psutil.virtual_memory().percent
+        cpu = psutil.cpu_percent() if psutil else 0.0
+        mem = psutil.virtual_memory().percent if psutil else 0.0
     except:
         cpu, mem = 0, 0
     
